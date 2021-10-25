@@ -1,0 +1,4 @@
+---
+- import_playbook: prereq.yaml
+- import_playbook: domoticz.yaml
+- import_playbook: emoncms.yaml

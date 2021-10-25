@@ -1,0 +1,95 @@
+---
+- hosts: rpi
+  become: yes
+  gather_facts: true
+  tasks:
+    - name: Populate all service facts
+      service_facts:
+
+    - name: Print service domoticz.service
+      debug:
+        var: ansible_facts.services['domoticz.service']
+
+    - include_role:
+        name: wilmardo.domoticz
+      vars:
+        domoticz_download_dir: /home/domoticz # The directory where the downloaded files will be placed
+        domoticz_url: https://releases.domoticz.com/releases/release/domoticz_linux_armv7l.tgz # The Domoticz download url
+        domoticz_src: domoticz # The name of the untarred Domoticz directory
+        domoticz_user: domoticz # The user which the Domoticz daemon runs as
+        domoticz_group: domoticz # The group which the Domoticz daemon runs as
+        domoticz_port: 8888 # The port for Domoticz to run http (-www daemon option). For ports <1024 root privileges are required, better to setup a reverse proxy with for example Nginx
+        domoticz_https: true # Enable/Disable https for Domoticz
+        domoticz_https_port: 443 # The port for Domoticz to run https (-sslwww daemon option). For ports <1024 root privileges are required, better to setup a reverse proxy with for example Nginx
+        domoticz_ssl_cert: "{{ domoticz_download_dir }}/{{ domoticz_src }}/server_cert.pem" # Path to SSL certificate, if left default the server_cert.pem from Domoticz will be used (-sslcert daemon option)
+        domoticz_zwave_support: true # Add support for ZWave
+        zwave_version: master # The version of Open-ZWave to be installed (accepts same arguments as version parameter of git module)
+        zwave_url: https://github.com/OpenZWave/open-zwave.git # The Open-ZWave git url
+      when: "'domoticz.service' not in services"
+
+
+    - name: Install RPI monitoring
+      ansible.builtin.git:
+        repo: https://github.com/Xorfor/Domoticz-PiMonitor-Plugin
+        dest: /home/domoticz/domoticz/plugins/PiMonitor
+      notify:
+        - Restart domoticz
+
+  handlers:
+    - name: Restart domoticz
+      ansible.builtin.systemd:
+        state: restarted
+        daemon_reload: yes
+        enabled: yes
+        name: domoticz.service
+
+- hosts: rpi
+  become: no
+  gather_facts: false
+  tasks:
+    - name: Print service domoticz.service
+      debug:
+        var: ansible_facts.services['nodered.service']
+
+    - name: Download node-red script
+      get_url: 
+        url: https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered
+        dest: /tmp/update-nodejs-and-nodered
+        validate_certs: false
+      when: "'nodered.service' not in services"
+      notify:
+        - Restart node-red
+
+    - name: Set permissions on node-red script
+      file:
+        path: /tmp/update-nodejs-and-nodered
+        state: touch
+        mode: +x
+      when: "'nodered.service' not in services"
+      notify:
+        - Restart node-red
+
+    - name: Install node-red
+      command: /tmp/update-nodejs-and-nodered --confirm-install --confirm-pi
+      ignore_errors: yes
+      when: "'nodered.service' not in services"
+      notify:
+        - Restart node-red
+
+    - name: Copy flows.json
+      copy:
+         src: flows.json
+         dest: /home/pi/.node-red/flows.json
+      notify:
+        - Restart node-red
+ 
+  handlers:
+    - name: Restart node-red
+      become: yes
+      ansible.builtin.systemd:
+        state: restarted
+        daemon_reload: yes
+        enabled: yes
+        name: nodered.service
+
+

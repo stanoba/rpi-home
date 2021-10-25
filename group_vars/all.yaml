@@ -1,0 +1,8 @@
+---
+# This file need to be vaulted
+
+# Mysql credentials
+mysql_db: emoncms
+mysql_user: emoncms
+mysql_password: 3m0ncms123*
+

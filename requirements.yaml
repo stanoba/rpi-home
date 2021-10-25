@@ -1,0 +1,12 @@
+---
+# ansible-galaxy install -r requirements.yaml
+
+roles:
+  - name: wilmardo.domoticz
+    version: 1.0.2
+
+collections:
+  - name: community.mysql
+  - name: community.general
+
+

@@ -1,0 +1,219 @@
+---
+- hosts: all
+  become: yes
+  gather_facts: true
+  tasks:
+    - name: Add PHP repository key.
+      apt_key:
+        url: "https://packages.sury.org/php/apt.gpg"
+        state: present
+
+    - name: Add PHP repository to sources list
+      apt_repository:
+        repo: deb https://packages.sury.org/php/ buster main
+        state: present
+
+    - name: Install list of packages for EmonCMS
+      apt:
+        state: present 
+        allow_unauthenticated: yes
+        update_cache: yes
+        name:
+          - mariadb-server
+          - redis
+          - apache2
+          - libapache2-mod-fcgid
+          - php7.3-cli
+          - php7.3-fpm
+          - php7.3-opcache
+          - php7.3-curl
+          - php7.3-mbstring
+          - php7.3-pgsql
+          - php7.3-zip
+          - php7.3-xml
+          - php7.3-gd
+          - php7.3-mysql
+          - php7.3-redis
+          - php7.3-dev
+
+    - name: Install list of PIP packages
+      pip:
+        state: latest
+        name:
+          - pymysql
+          - redis
+
+    - name: Creates directories
+      file:
+        path: "{{ item.dir }}"
+        state: directory
+        mode: '0777'
+      with_items:
+        - { dir: "/var/log/emoncms/" }
+        - { dir: "/var/lib/phpfina/" }
+        - { dir: "/var/lib/phptimeseries/" }
+
+    - name: Create emoncms log file
+      file:
+        path: /var/log/emoncms/emoncms.log
+        state: touch
+        mode: '0777'
+
+    - name: Create update log file
+      file:
+        path: /var/log/emoncms/update.log
+        state: touch
+        mode: '0777'
+
+    - name: Copy emonsd.conf
+      copy:
+         src: emonsd.conf
+         dest: /etc/apache2/conf-available/emonsd.conf
+
+    - name: Copy emoncms.conf
+      copy:
+         src: emoncms.conf
+         dest: /etc/apache2/sites-available/emoncms.conf
+
+    - name: Copy mosquitto.ini
+      copy:
+         src: php-mosquitto.ini
+         dest: /etc/php/7.3/mods-available/mosquitto.ini
+
+    - name: Configure apache modules
+      command: "{{ item.command }}"
+      with_items:
+        - { command: "a2enmod proxy_fcgi" }
+        - { command: "a2enmod rewrite" }
+        - { command: "a2enconf php7.3-fpm" }
+        - { command: "a2enconf emonsd.conf" }
+        - { command: "a2dissite 000-default.conf" }
+        - { command: "a2ensite emoncms" }
+        - { command: "phpenmod mosquitto" }
+
+    - name: Install Mosquitto-beta pecl package
+      community.general.pear:
+        name: pecl/Mosquitto-beta
+        state: present
+
+    - name: Reload apache2.service
+      service:
+        name: apache2.service
+        state: restarted
+
+    - name: Install EmonCMS web
+      git:
+        repo: https://github.com/emoncms/emoncms.git
+        dest: /var/www/html/emoncms/
+
+    - name: Set Emoncms configuration
+      template:
+        src: settings.ini.j2
+        dest: /var/www/html/emoncms/settings.ini
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Create a new database 
+      community.mysql.mysql_db:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        name: "{{ mysql_db }}"
+        state: present
+
+    - name: Create database user
+      community.mysql.mysql_user:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        name: "{{ mysql_user }}"
+        password: "{{ mysql_password }}"
+        priv: "{{ mysql_db }}.*:ALL,GRANT"
+        state: present
+
+    - name: Git clone EmonCMS Modules
+      async: 30
+      poll: 5
+      git:
+        repo: "{{ item.url }}"
+        dest: "/var/www/html/emoncms/Modules/{{ item.name }}"
+        accept_hostkey: yes
+        force: yes
+      diff: no
+      with_items:
+        - { name: graph, url: https://github.com/emoncms/graph }
+        - { name: device, url: https://github.com/emoncms/device }
+        - { name: dashboard, url: https://github.com/emoncms/dashboard }
+        - { name: app, url: https://github.com/emoncms/app }
+        - { name: config, url: https://github.com/emoncms/config }
+
+
+    - name: Copy emoncms_mqtt.service service
+      ansible.builtin.copy:
+        src: /var/www/html/emoncms/scripts/services/emoncms_mqtt/emoncms_mqtt.service
+        dest: /lib/systemd/system/emoncms_mqtt.service
+        remote_src: yes
+
+    - name: Copy feedwriter.service service
+      ansible.builtin.copy:
+        src: /var/www/html/emoncms/scripts/services/feedwriter/feedwriter.service
+        dest: /lib/systemd/system/feedwriter.service
+        remote_src: yes
+
+    - name: Copy service-runner.service service
+      ansible.builtin.copy:
+        src: /var/www/html/emoncms/scripts/services/service-runner/service-runner.service
+        dest: /lib/systemd/system/service-runner.service
+        remote_src: yes
+
+    - name: Updating emoncms_mqtt.service
+      lineinfile: 
+        dest: /lib/systemd/system/emoncms_mqtt.service
+        state: present 
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      with_items:
+        - { regexp: '^ExecStart=', line: 'ExecStart=/usr/bin/php /var/www/html/emoncms/scripts/services/emoncms_mqtt/emoncms_mqtt.php' }
+
+    - name: Updating feedwriter.service
+      lineinfile: 
+        dest: /lib/systemd/system/feedwriter.service
+        state: present 
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      with_items:
+        - { regexp: '^ExecStart=', line: 'ExecStart=/usr/bin/php /var/www/html/emoncms/scripts/feedwriter.php' }
+
+    - name: Updating service-runner.service
+      lineinfile: 
+        dest: /lib/systemd/system/service-runner.service
+        state: present 
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      with_items:
+        - { regexp: '^ExecStart=', line: 'ExecStart=/usr/bin/python3 /var/www/html/emoncms/scripts/services/service-runner/service-runner.py' }
+
+    - name: Restart emoncms_mqtt.service
+      ansible.builtin.systemd:
+        state: restarted
+        daemon_reload: yes
+        enabled: yes
+        name: emoncms_mqtt.service
+
+    - name: Restart feedwriter.service
+      ansible.builtin.systemd:
+        state: restarted
+        daemon_reload: yes
+        enabled: yes
+        name: feedwriter.service
+
+    - name: Restart service-runner.service
+      ansible.builtin.systemd:
+        state: restarted
+        daemon_reload: yes
+        enabled: yes
+        name: service-runner.service
+
+
+
+
+
+       
+

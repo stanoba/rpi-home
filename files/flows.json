@@ -1,0 +1,142 @@
+[
+    {
+        "id": "a0324384dbebf789",
+        "type": "tab",
+        "label": "Emon TX",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "5965bb52.a50d74",
+        "type": "mqtt in",
+        "z": "a0324384dbebf789",
+        "name": "",
+        "topic": "emon/EmonTX/+",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "d220b289.c4c45",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 280,
+        "y": 280,
+        "wires": [
+            [
+                "c1e0d09e.c6155",
+                "6e5ac576.01a50c"
+            ]
+        ],
+        "outputLabels": [
+            "EmonESP OUT"
+        ]
+    },
+    {
+        "id": "cffd3e5b.6dd27",
+        "type": "debug",
+        "z": "a0324384dbebf789",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 950,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "c1e0d09e.c6155",
+        "type": "function",
+        "z": "a0324384dbebf789",
+        "name": "parse mqtt",
+        "func": "if (msg.topic === \"emon/EmonTX/power\") {\nmsg2 = {};\n//payload = \nmsg2.payload={};\nmsg2.payload.idx=8;\nmsg2.payload.nvalue=0;\nmsg2.payload.svalue=msg.payload;\nreturn msg2;\n}else if(msg.topic === \"emon/EmonTX/vrms\") {\nmsg2 = {};\n//payload = \nmsg2.payload={};\nmsg2.payload.idx=16;\nmsg2.payload.nvalue=0;\nmsg2.payload.svalue=msg.payload;\nreturn msg2;\n}",
+        "outputs": "1",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 507.5,
+        "y": 239,
+        "wires": [
+            [
+                "9bea3ee2.f6f9d"
+            ]
+        ]
+    },
+    {
+        "id": "6e5ac576.01a50c",
+        "type": "function",
+        "z": "a0324384dbebf789",
+        "name": "parse http",
+        "func": "if (msg.topic === \"emon/EmonTX/power\") {\nmsg1={};\nmsg1.payload = \"\";\nmsg1.method = \"GET\";\nmsg1.url=\"http://localhost:8888/json.htm?type=command&param=udevice&idx=8&nvalue=0&svalue=\"+msg.payload;\nreturn msg1;\n}else if(msg.topic === \"emon/EmonTX/vrms\") {\nmsg1={};\nmsg1.payload = \"\";\nmsg1.method = \"GET\";\nmsg1.url=\"http://localhost:8888/json.htm?type=command&param=udevice&idx=16&nvalue=0&svalue=\"+msg.payload;\nreturn msg1;\n}",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 497,
+        "y": 306,
+        "wires": [
+            [
+                "660c1d6c.1e5ee4"
+            ]
+        ]
+    },
+    {
+        "id": "9bea3ee2.f6f9d",
+        "type": "mqtt out",
+        "z": "a0324384dbebf789",
+        "name": "",
+        "topic": "domoticz/in",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "d220b289.c4c45",
+        "x": 753,
+        "y": 205,
+        "wires": []
+    },
+    {
+        "id": "660c1d6c.1e5ee4",
+        "type": "http request",
+        "z": "a0324384dbebf789",
+        "name": "",
+        "method": "use",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "authType": "",
+        "senderr": false,
+        "x": 754,
+        "y": 330,
+        "wires": [
+            [
+                "cffd3e5b.6dd27"
+            ]
+        ]
+    },
+    {
+        "id": "d220b289.c4c45",
+        "type": "mqtt-broker",
+        "broker": "localhost",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "compatmode": true,
+        "keepalive": 15,
+        "cleansession": true,
+        "birthQos": "0",
+        "willQos": "0"
+    }
+]

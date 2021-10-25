@@ -1,0 +1,22 @@
+all:
+  vars:
+    ansible_connection: ssh
+    ansible_user: pi
+    ansible_ssh_pass: raspberry # default rpi password
+    ansible_python_interpreter: /usr/bin/python3
+    ansible_ssh_transfer_method: scp
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+
+    rpi_locale: en_US.UTF-8
+    rpi_timezone: Europe/Bratislava
+    rpi_keyboard: us
+    rpi_wifi_country: SK
+
+  children:
+    rpi:
+      hosts:
+        domoticz.home.local:
+          ansible_host: 192.168.5.36
+
+
+

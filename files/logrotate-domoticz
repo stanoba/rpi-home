@@ -1,0 +1,12 @@
+/var/log/domoticz.log {
+        su root root
+        missingok
+        daily
+        copytruncate
+        rotate 7
+        compress
+        delaycompress
+        notifempty
+        postrotate
+        endscript
+}

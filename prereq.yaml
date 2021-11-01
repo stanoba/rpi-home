@@ -40,26 +40,6 @@
         - "127.0.0.1 localhost"
         - "{{ ansible_default_ipv4.address }} {{ inventory_hostname }} {{ inventory_hostname_short }}"
 
-############################## SET /boot/config.txt ####################################
-
-    - name: Updating /boot/config.txt
-      lineinfile: 
-        dest: /boot/config.txt
-        state: present 
-        regexp: "{{ item.regexp }}"
-        line: "{{ item.line }}"
-      with_items:
-        - { regexp: '^dtparam=i2c_arm', line: 'dtparam=i2c_arm=on' }
-        - { regexp: '^dtparam=spi', line: 'dtparam=spi=on' }
-        - { regexp: '^enable_uart=1', line: 'enable_uart=1' }
-        - { regexp: '^dtoverlay=w1-gpio,gpiopin=4', line: 'dtoverlay=w1-gpio' }
-        - { regexp: '^dtoverlay=disable-bt', line: 'dtoverlay=disable-bt' }
-        - { regexp: '^dtoverlay=disable-wifi', line: 'dtoverlay=disable-wifi' }
-
-    - name: Disable BT modem
-      command: systemctl disable hciuart
-      ignore_errors: yes
-
 ############################# SET /etc/environment ####################################
 
     - name: Updating /etc/environment
@@ -69,10 +49,10 @@
         regexp: "{{ item.regexp }}"
         line: "{{ item.line }}"
       with_items:
-        - { regexp: '^LANGUAGE=', line: 'LANGUAGE=en_US' }
-        - { regexp: '^LC_ALL=', line: 'LC_ALL=en_US' }
-        - { regexp: '^LANG=', line: 'LANG=en_US' }
-        - { regexp: '^LC_TYPE=', line: 'LC_TYPE=en_US' }
+        - { regexp: '^LANGUAGE=', line: "LANGUAGE={{ rpi_system_lang }}" }
+        - { regexp: '^LC_ALL=', line: "LC_ALL={{ rpi_system_lang }}" }
+        - { regexp: '^LANG=', line: "LANG={{ rpi_system_lang }}" }
+        - { regexp: '^LC_TYPE=', line: "LC_TYPE={{ rpi_system_lang }}" }
 
 ############################# SET Raspi-Config ###################################
 
@@ -92,6 +72,40 @@
 
     - name: Set boot wait network status
       shell: "raspi-config nonint do_boot_wait 1"
+
+    - name: Enable i2c
+      shell: "raspi-config nonint do_i2c 0"
+
+    - name: Enable serial port / disable console
+      shell: "raspi-config nonint do_serial 1"
+
+    - name: Disable serial console service
+      ansible.builtin.systemd:
+        name: serial-getty@serial0.service
+        enabled: no
+        masked: yes
+
+############################## SET /boot/config.txt ####################################
+
+    - name: Updating /boot/config.txt
+      lineinfile: 
+        dest: /boot/config.txt
+        state: present 
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      with_items:
+        - { regexp: '^dtparam=i2c_arm', line: 'dtparam=i2c_arm=on' }
+        - { regexp: '^dtparam=spi', line: 'dtparam=spi=on' }
+        - { regexp: '^enable_uart=', line: 'enable_uart=1' }
+        #- { regexp: '^dtoverlay=w1-gpio,gpiopin=4', line: 'dtoverlay=w1-gpio' }
+        - { regexp: '^dtoverlay=disable-bt', line: 'dtoverlay=disable-bt' }
+        - { regexp: '^dtoverlay=disable-wifi', line: 'dtoverlay=disable-wifi' }
+        - { regexp: '^dtparam=audio', line: 'dtparam=audio=off' }
+        - { regexp: '^gpu_mem', line: 'gpu_mem=16' }
+
+    - name: Disable BT modem
+      command: systemctl disable hciuart
+      ignore_errors: yes
 
 ################################ SET .bashrc ######################################
 
@@ -179,11 +193,15 @@
       copy:
         dest: /home/pi/.ssh/authorized_keys
         content: |
-          ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQD5t3vQ08y1a+2YjTSJWqD756kUCC8FUwg72NzrCi/byEHltNa6hG7g4FODqMKkyVNfNrCLCG/GLidB+wGifxL1QW/Ey0PNxaI2cMqNfDbUJlcPPV/lFSgy9bhtgcd9pzPvl7I+jQ07nQuWrQewUQv0k2dDckp89dDUWoblrwFN4yvYaOqdc5r8CzkeS/NA/qK7d3MfUGmyLMwwZZe1bnpN0q4IQay3yokZeluYc0bLdkXuiuDw7d61GvwzABnIt6Q3h0PwUboQWPfPJ9ZE9K6hlFj8iH6uAB8WIPXlEzE3TVl6Y+ARGGEhRE8iM1cd56+JcgjuVj3w/mBj/VdIA6vz Stano
+          {{ rpi_ssh_key }}
       tags:
         - ssh_keys
 
 ################################ SET serial ports ######################################
+
+
+    - name: Add pi user to dialout and tty group
+      command: usermod -a -G dialout,tty pi
 
     - name: Redirect serial port
       blockinfile:
@@ -192,12 +210,13 @@
         insertbefore: "exit 0"
         block: sudo ln -s /dev/ttyAMA0 /dev/ttyUSB-ZWave
 
+    # Get detail by command: udevadm info -a -p  $(udevadm info -q path -n /dev/ttyUSB1) | grep -A 50 -i 'KERNELS=="1-1.3"'
     - name: USB persistent rules
       copy:
         dest: /etc/udev/rules.d/99-usb-serial.rules
         content: |
-          SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="A50285BI", SYMLINK+="ttyUSB-OTG"
-          SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", SYMLINK+="ttyUSB-RF-Link"
+          SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="A50285BI", OWNER="domoticz", SYMLINK+="ttyUSB-OTG"
+          SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", OWNER="domoticz", SYMLINK+="ttyUSB-RF-Link"
 
 ########################### Install apt packages ###############################
 
@@ -260,6 +279,7 @@
           - libmosquitto-dev
           - highlight
           - locales-all
+          - apache2
 
 
     - name: Link pip to pip3
@@ -276,6 +296,8 @@
           - RPi.GPIO
           - Image
           - Pygments
+          - Adafruit-SSD1306
+          - Adafruit_BBIO
 
     - name: Upgrade the OS
       apt:
@@ -286,5 +308,6 @@
     - name: Remove dependencies that are no longer required
       apt:
         autoremove: yes
+
 
 #################################### END #######################################

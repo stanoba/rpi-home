@@ -1,0 +1,65 @@
+/*
+CUSTOM CSS FILE
+*/
+/*body { font-family: Orbitron, serif;}*/
+
+.fa.fa-lightbulb-o.on {
+    color:#F1C300;
+}
+.fa.fa-lightbulb-o.off {
+    color:#fff;
+}
+.containsicalendar {
+        font-size:14px;
+}
+
+.swiper-pagination-bullet {
+    width: 20px !important;
+    height: 20px !important;
+}
+
+.fa.fa-home.on {color: green}
+.fa.fa-home.off {color: red}
+.fa.fa-male.on {color: green}
+.fa.fa-male.off {color: red}
+.fa.fa-female.on {color: green}
+.fa.fa-female.off {color: red}
+.fa-male:before{font-size: 36px;}
+.fa-female:before{font-size: 36px;}
+.fa-lightbulb-o:before{font-size: 16px;} /* light bulb */
+.fa-print:before{font-size: 36px;}
+.fa-home:before{font-size: 36px;}
+
+
+.mh { height: 120px !important; margin: 0px !important;}
+.col-data {font-size:16px !important; width:100%;}
+
+.col-icona { display:none;}
+
+.col-icona {padding:0px; max-width:20px !important;}
+/* transbg */
+
+.transbg {border: 3px solid rgba(255,255,255,0)  !important;}
+
+.title {font-size:34px !important;
+                font-family: 'Play', Verdana, serif;
+                 padding: 0px !important;}
+
+.lastupdate {visibility:hidden;}
+
+.block_s1 {
+ color:#FF2A2A !important;
+}
+
+.block_s3 {
+ color:#FF00AA !important;
+}
+.block_s4 {
+ color:#00AAFF !important;
+}
+.block_s5 {
+ color:#FFAA00 !important;
+}
+.fa,.wi {
+   font-size:16px !important;
+}

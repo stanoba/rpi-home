@@ -21,7 +21,6 @@
         name:
           - mariadb-server
           - redis
-          - apache2
           - libapache2-mod-fcgid
           - php7.3-cli
           - php7.3-fpm
@@ -52,6 +51,9 @@
         - { dir: "/var/log/emoncms/" }
         - { dir: "/var/lib/phpfina/" }
         - { dir: "/var/lib/phptimeseries/" }
+        - { dir: "/opt/openenergymonitor" }
+        - { dir: "/opt/emoncms/modules" }
+        - { dir: "/backup/uploads" }
 
     - name: Create emoncms log file
       file:
@@ -128,6 +130,26 @@
         priv: "{{ mysql_db }}.*:ALL,GRANT"
         state: present
 
+    - name: Install EmonCMS Backup
+      git:
+        repo: https://github.com/emoncms/backup.git
+        dest: /opt/emoncms/modules/backup
+
+    - name: Copy backup config
+      ansible.builtin.copy:
+        src: config.cfg
+        dest: /opt/emoncms/modules/backup/config.cfg
+
+    - name: Copy php backup config
+      ansible.builtin.copy:
+        src: emoncmsbackup.ini
+        dest: /etc/php/7.3/mods-available/emoncmsbackup.ini
+
+    - name: Install EmonScripts
+      git:
+        repo: https://github.com/openenergymonitor/EmonScripts.git
+        dest: /opt/openenergymonitor/EmonScripts
+
     - name: Git clone EmonCMS Modules
       async: 30
       poll: 5
@@ -162,6 +184,16 @@
         src: /var/www/html/emoncms/scripts/services/service-runner/service-runner.service
         dest: /lib/systemd/system/service-runner.service
         remote_src: yes
+
+    # - name: Copy backup module to Modules
+    #   ansible.builtin.copy:
+    #     src: /opt/emoncms/modules/backup/backup-module
+    #     dest: /var/www/html/emoncms/Modules/
+    #     remote_src: yes
+
+    # - name: Rename EmonCMS Backup plugin
+    #   command: mv /var/www/html/emoncms/Modules/backup-module /var/www/html/emoncms/Modules/backup
+    #   ignore_errors: yes
 
     - name: Updating emoncms_mqtt.service
       lineinfile: 

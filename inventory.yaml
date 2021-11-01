@@ -11,12 +11,18 @@ all:
     rpi_timezone: Europe/Bratislava
     rpi_keyboard: us
     rpi_wifi_country: SK
+    rpi_system_lang: en_US
+
+    rpi_ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQD5t3vQ08y1a+2YjTSJWqD756kUCC8FUwg72NzrCi/byEHltNa6hG7g4FODqMKkyVNfNrCLCG/GLidB+wGifxL1QW/Ey0PNxaI2cMqNfDbUJlcPPV/lFSgy9bhtgcd9pzPvl7I+jQ07nQuWrQewUQv0k2dDckp89dDUWoblrwFN4yvYaOqdc5r8CzkeS/NA/qK7d3MfUGmyLMwwZZe1bnpN0q4IQay3yokZeluYc0bLdkXuiuDw7d61GvwzABnIt6Q3h0PwUboQWPfPJ9ZE9K6hlFj8iH6uAB8WIPXlEzE3TVl6Y+ARGGEhRE8iM1cd56+JcgjuVj3w/mBj/VdIA6vz Stanley"
+
+    domoticz_port: 8888
+    domoticz_https_port: 8443
 
   children:
     rpi:
       hosts:
         domoticz.home.local:
-          ansible_host: 192.168.5.36
+          ansible_host: 192.168.5.99
 
 
 

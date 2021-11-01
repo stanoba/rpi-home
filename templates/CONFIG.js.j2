@@ -1,0 +1,128 @@
+var config = {}
+config['domoticz_ip'] = 'http://{{ ansible_default_ipv4.address }}:8888';
+config['app_title'] = 'Home.RPI4';
+config['domoticz_refresh'] = '10';
+config['dashticz_refresh'] = '3600';
+
+var _STREAMPLAYER_TRACKS     = [
+   {"track":1,"name":"Fun Radio","file":"http://stream.funradio.sk:8000/fun192.mp3"},
+   {"track":2,"name":"Expres","file":"http://stream.expres.sk:8000/128.mp3"},
+   {"track":3,"name":"SRO","file":"http://icecast.stv.livebox.sk/slovensko_128.mp3"},
+   {"track":4,"name":"Jemne Melodie","file":"http://stream.jemne.sk/jemne-hi.mp3"},
+];
+
+var blocks = {}
+
+blocks['blocktitle_2'] = {}
+blocks['blocktitle_2']['key'] = 'blocktitle_2';
+blocks['blocktitle_2']['type'] = 'blocktitle';
+blocks['blocktitle_2']['title'] = 'Vypínače';
+
+blocks['blocktitle_3'] = {}
+blocks['blocktitle_3']['key'] = 'blocktitle_3';
+blocks['blocktitle_3']['type'] = 'blocktitle';
+blocks['blocktitle_3']['title'] = 'Počasie';
+
+blocks['blocktitle_4'] = {}
+blocks['blocktitle_4']['key'] = 'blocktitle_4';
+blocks['blocktitle_4']['type'] = 'blocktitle';
+blocks['blocktitle_4']['title'] = 'Webkamera';
+
+
+blocks['blocktitle_6'] = {}
+blocks['blocktitle_6']['key'] = 'blocktitle_6';
+blocks['blocktitle_6']['type'] = 'blocktitle';
+blocks['blocktitle_6']['title'] = 'Smeti';
+
+blocks[191] = {}
+blocks[191]['width'] = 12;
+blocks[186] = {}
+blocks[186]['width'] = 12;
+
+blocks[209] = {}
+blocks[209]['icon'] = 'fa-female';
+blocks[209]['title'] = 'maminka';
+blocks[207] = {}
+blocks[207]['icon'] = 'fa-male';
+blocks[208] = {}
+blocks[208]['icon'] = 'fa-male';
+
+blocks[54] = {}
+blocks[54]['title'] = 'Podlaha';
+
+blocks[1277] = {}
+blocks[1277]['title'] = 'TUV';
+blocks[1277]['icon'] = 'fas fa-shower';
+//blocks[1277]['speak'] = 'Device status has changed';
+
+blocks[294] = {}
+blocks[294]['icon'] = 'fas fa-swimming-pool';
+
+blocks[296] = {}
+blocks[296]['icon'] = 'fas fa-solar-panel';
+
+blocks[1618] = {}
+blocks[1618]['icon'] = 'far fa-snowflake';
+blocks[1618]['title'] = 'Klíma';
+
+blocks[1620] = {}
+blocks[1620]['icon'] = 'fas fa-temperature-low';
+blocks[1620]['title'] = 'Klíma - nastavená';
+
+blocks[1624] = {}
+blocks[1624]['icon'] = 'fas fa-temperature-high';
+blocks[1624]['title'] = 'Klíma - reálna';
+
+blocks['8_1'] = {}
+blocks['8_1']['icon'] = 'fas fa-plug';
+
+// https://fontawesome.com/v4.7.0/icons/
+// https://fontawesome.com/v5.15/icons?d=gallery&p=2&q=pool&m=free
+
+var columns = {}
+columns['bar'] = {}
+columns['bar']['blocks'] = ['logo','miniclock','settings']
+
+/*
+var columns = {}
+columns['bar'] = {}
+columns['bar']['blocks'] = ['logo','miniclock','settings']
+/*
+columns[1] = {}
+columns[1]['blocks'] = [25,'3_2',18,19,26,30] //temps
+columns[1]['width'] = 4;
+*/
+columns[2] = {}
+columns[2]['blocks'] = ['8_1',1317,'s1',25,18,19,26,30,17,'1254_1',1277,295,296,294,1618,1620,1624,54,55,56,63,64,70,186,191] //switch 16,
+columns[2]['width'] = 4;
+/*
+columns[3] = {}
+columns[3]['blocks'] = ['blocktitle_2',1,175,178,13,55,54,74,209,208,207,191,186,73,152,'streamplayer'] //switches
+columns[3]['width'] = 4;
+*/
+/*
+columns[4] = {}
+columns[4]['blocks'] = ['currentweather_big',5,3,'weather','sunrise',buttons.buienradar] //4,6,
+columns[4]['width'] = 4;
+*/
+/*,'blocktitle_4',buttons.webcam*/
+
+var columns_standby = {}
+columns_standby[1] = {}
+columns_standby[1]['blocks'] = ['clock','currentweather_big','weather','horizon']  //specify blocks for the standby mode
+columns_standby[1]['width'] = 12;
+
+
+var screens = {}
+screens[1] = {}
+screens[1]['background'] = 'bg11.jpg';
+screens[1]['columns'] = [2]
+/*
+screens['default'] = {}
+screens['default']['maxwidth'] = 1920;
+screens['default']['maxheight'] = 1080;
+
+screens['default'][1] = {}
+screens['default'][1]['background'] = 'bg11.jpg';
+screens['default'][1]['columns'] = [2]
+*/

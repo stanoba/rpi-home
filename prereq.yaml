@@ -201,7 +201,7 @@
 
 
     - name: Add pi user to dialout and tty group
-      command: usermod -a -G dialout,tty pi
+      command: usermod -aG dialout,tty pi
 
     - name: Redirect serial port
       blockinfile:
@@ -231,8 +231,9 @@
 
     - name: Add log2ram repository to sources list
       apt_repository:
-        repo: deb http://packages.azlux.fr/debian/ buster main
+        repo: deb http://packages.azlux.fr/debian/ bullseye main
         state: present
+        filename: log2ram
 
     - name: Install basic packages
       apt:
@@ -280,6 +281,7 @@
           - highlight
           - locales-all
           - apache2
+          - gnupg
 
 
     - name: Link pip to pip3
@@ -289,6 +291,13 @@
         path: /usr/bin/pip3
         priority: 1
 
+    - name: Install Adafruit GPIO PIP module
+      shell: |
+        cd /tmp
+        git clone https://github.com/adafruit/Adafruit_Python_GPIO.git
+        cd Adafruit_Python_GPIO
+        sudo python setup.py install
+
     - name: Install list of PIP packages
       pip:
         state: latest
@@ -297,12 +306,12 @@
           - Image
           - Pygments
           - Adafruit-SSD1306
-          - Adafruit_BBIO
+          - Adafruit-Blinka
 
     - name: Upgrade the OS
       apt:
-        upgrade: yes
-        update_cache: yes
+        upgrade: full
+        update_cache: true
         cache_valid_time: "86400" #One day
 
     - name: Remove dependencies that are no longer required

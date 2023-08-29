@@ -21,8 +21,8 @@ all:
   children:
     rpi:
       hosts:
-        domoticz.home.local:
-          ansible_host: 192.168.5.99
+        core.home.local:
+          ansible_host: 192.168.5.92
 
 
 

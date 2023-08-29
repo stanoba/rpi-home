@@ -1,0 +1,56 @@
+---
+- hosts: rpi
+  become: yes
+  gather_facts: true
+  tasks:
+################################ Install docker ######################################
+
+    - name: Add docker repository key.
+      apt_key:
+        url: "https://download.docker.com/linux/raspbian/gpg"
+        state: present
+        keyring: /etc/apt/keyrings/docker.gpg
+
+    - name: Add docker repository to sources list
+      apt_repository:
+        repo: "deb [arch=armhf signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/raspbian   bullseye stable"
+        state: present
+        filename: docker
+
+    - name: Remove old docker packages
+      apt:
+        state: absent 
+        name:
+          - docker.io
+          - docker-doc
+          - docker-compose
+          - podman-docker
+          - containerd
+          - runc
+
+    - name: Install docker packages
+      apt:
+        state: present 
+        allow_unauthenticated: yes
+        update_cache: yes
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+
+################################ Deploy Home Assistant ######################################
+
+    - name: Copy docker compose file
+      template:
+        src: haas-compose.yml.j2
+        dest: /home/{{ ansible_user }}/haas-compose.yml
+        owner: pi
+        group: pi
+        mode: 0644
+
+    - name: Add pi user to docker group
+      shell: usermod -aG docker pi
+
+

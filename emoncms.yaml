@@ -10,7 +10,7 @@
 
     - name: Add PHP repository to sources list
       apt_repository:
-        repo: deb https://packages.sury.org/php/ buster main
+        repo: deb https://packages.sury.org/php/ bullseye main
         state: present
 
     - name: Install list of packages for EmonCMS

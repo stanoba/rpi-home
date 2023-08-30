@@ -1,4 +1,4 @@
 ---
 - import_playbook: prereq.yaml
-- import_playbook: haas.yaml
+- import_playbook: hass.yaml
 #- import_playbook: emoncms.yaml

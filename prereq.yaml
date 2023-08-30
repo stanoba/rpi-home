@@ -6,6 +6,9 @@
   become: yes
   gather_facts: false
   tasks:
+    - name: Populate all service facts
+      service_facts:
+
     - name: Link python to python3
       alternatives:
         name: python
@@ -199,9 +202,8 @@
 
 ################################ SET serial ports ######################################
 
-
-    - name: Add pi user to dialout and tty group
-      command: usermod -aG dialout,tty pi
+    - name: "Add {{ ansible_user }} user to dialout and tty group"
+      command: "usermod -aG dialout,tty {{ ansible_user }}"
 
     - name: Redirect serial port
       blockinfile:
@@ -210,7 +212,7 @@
         insertbefore: "exit 0"
         block: sudo ln -s /dev/ttyAMA0 /dev/ttyUSB-ZWave
 
-    # Get detail by command: udevadm info -a -p  $(udevadm info -q path -n /dev/ttyUSB1) | grep -A 50 -i 'KERNELS=="1-1.3"'
+    # Get detail by command: udevadm info -a -p  $(udevadm info -q path -n /dev/ttyUSB0) | grep -A 50 -i 'KERNELS=="1-1.5"'
     - name: USB persistent rules
       copy:
         dest: /etc/udev/rules.d/99-usb-serial.rules
@@ -283,7 +285,6 @@
           - apache2
           - gnupg
 
-
     - name: Link pip to pip3
       alternatives:
         name: pip
@@ -307,6 +308,9 @@
           - Pygments
           - Adafruit-SSD1306
           - Adafruit-Blinka
+          - pip
+          - setuptools
+          - wheel
 
     - name: Upgrade the OS
       apt:
@@ -318,5 +322,124 @@
       apt:
         autoremove: yes
 
+    - name: Copy root index.html
+      copy:
+         src: index.html
+         dest: /var/www/html/
+
+#################################### NODE RED #######################################
+
+- hosts: rpi
+  become: no
+  gather_facts: false
+  tasks:
+    - name: Print service nodered.service
+      debug:
+        var: ansible_facts.services['nodered.service']
+      tags:
+        - install_node-red
+
+    - name: Download node-red script
+      get_url: 
+        url: https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered
+        dest: /tmp/update-nodejs-and-nodered
+        validate_certs: false
+      when: "'nodered.service' not in services"
+      notify:
+        - Restart node-red
+      tags:
+        - install_node-red
+
+    - name: Set permissions on node-red script
+      file:
+        path: /tmp/update-nodejs-and-nodered
+        state: touch
+        mode: +x
+      when: "'nodered.service' not in services"
+      notify:
+        - Restart node-red
+      tags:
+        - install_node-red
+
+    - name: Install node-red
+      command: /tmp/update-nodejs-and-nodered --confirm-install --confirm-pi
+      ignore_errors: yes
+      when: "'nodered.service' not in services"
+      notify:
+        - Restart node-red
+      tags:
+        - install_node-red
+
+    - name: Copy flows.json
+      copy:
+         src: flows.json
+         dest: /home/pi/.node-red/flows.json
+      notify:
+        - Restart node-red
+      tags:
+        - install_node-red
+
+  handlers:
+    - name: Restart node-red
+      become: yes
+      ansible.builtin.systemd:
+        state: restarted
+        daemon_reload: yes
+        enabled: yes
+        name: nodered.service
+      tags:
+        - install_node-red
+
+#################################### MySensors #######################################
+
+- hosts: rpi
+  become: yes
+  gather_facts: false
+  tasks:
+    - name: Clone MySensors
+      ansible.builtin.git:
+        repo: https://github.com/mysensors/MySensors.git
+        dest: /home/{{ ansible_user }}/MySensors
+        #version: 2.3.2
+        version: development
+      tags:
+        - build_mysensors
+
+    - name: Configure MySensors
+      command: './configure --my-gateway=serial --my-serial-is-pty --my-serial-groupname=dialout --my-serial-port=/dev/ttyUSBMySensorsGateway --spi-spidev-device=/dev/spidev0.1 --my-debug=enable --my-transport=rf24 --my-rf24-pa-level=RF24_PA_LOW --my-rf24-irq-pin=18 --my-leds-err-pin=12 --my-leds-rx-pin=16 --my-leds-tx-pin=11'
+      args:
+        chdir: /home/{{ ansible_user }}/MySensors
+      tags:
+        - build_mysensors
+
+    - name: Make MySensors
+      command: make
+      args:
+        chdir: /home/{{ ansible_user }}/MySensors
+      tags:
+        - build_mysensors
+
+    - name: Make install MySensors
+      command: make install
+      args:
+        chdir: /home/{{ ansible_user }}/MySensors
+      tags:
+        - build_mysensors
+
+    - name: Copy /etc/mysensors.conf
+      copy:
+         src: mysensors.conf
+         dest: /etc/mysensors.conf
+      tags:
+        - build_mysensors
+
+    - name: Restart MySensors service
+      ansible.builtin.systemd:
+        state: restarted
+        daemon_reload: yes
+        enabled: yes
+        name: mysgw.service
+      tags:
+        - build_mysensors
 
 #################################### END #######################################

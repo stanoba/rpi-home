@@ -4,7 +4,7 @@
 
 1. Download RaspiOS from https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2023-05-03/ and save to SD card.
 
-1. Copy files from project `SD`` folder to `boot` partition on SD card.
+1. Copy files from project `SD` folder to `boot` partition on SD card.
 
 1. Install Ansible requirements:
     ```sh

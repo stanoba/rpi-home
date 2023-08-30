@@ -18,6 +18,8 @@ all:
     domoticz_port: 8888
     domoticz_https_port: 8443
 
+    hass_image: ghcr.io/home-assistant/home-assistant:stable
+
   children:
     rpi:
       hosts:

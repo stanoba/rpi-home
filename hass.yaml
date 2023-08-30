@@ -1,0 +1,133 @@
+---
+- hosts: rpi
+  become: yes
+  gather_facts: true
+  tasks:
+################################ Install docker ######################################
+    - name: Populate all service facts
+      service_facts:
+
+    - name: Print service docker.service
+      debug:
+        var: ansible_facts.services['docker.service']
+
+    - name: Creates keyring directory
+      file:
+        path: /etc/apt/keyrings/
+        state: directory
+
+    - name: Add docker repository key
+      apt_key:
+        url: "https://download.docker.com/linux/raspbian/gpg"
+        state: present
+        keyring: /etc/apt/keyrings/docker.gpg
+      when: "'docker.service' not in services"
+
+    - name: Add docker repository to sources list
+      apt_repository:
+        repo: "deb [arch=armhf signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/raspbian   bullseye stable"
+        state: present
+        filename: docker
+      when: "'docker.service' not in services"
+
+    - name: Remove old docker packages
+      apt:
+        state: absent 
+        name:
+          - docker.io
+          - docker-doc
+          - docker-compose
+          - podman-docker
+          - containerd
+          - runc
+      when: "'docker.service' not in services"
+
+    - name: Install docker packages
+      apt:
+        state: present 
+        allow_unauthenticated: yes
+        update_cache: yes
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+      notify:
+        - Restart docker service
+      when: "'docker.service' not in services"
+
+  handlers:
+    - name: Restart docker service
+      become: yes
+      ansible.builtin.systemd:
+        state: restarted
+        daemon_reload: yes
+        enabled: yes
+        name: docker.service
+
+################################ Install Home Assistant ######################################
+
+- hosts: rpi
+  become: yes
+  gather_facts: true
+  tasks:
+    - name: Create Home Assistant configuration directory
+      file:
+        path: /home/{{ ansible_user }}/.homeassistant/
+        owner: pi
+        group: pi
+        state: directory
+
+    - name: Create ESPHome configuration directory
+      file:
+        path: /home/{{ ansible_user }}/.esphome/
+        owner: pi
+        group: pi
+        state: directory
+
+    # - name: Copy Home Assistant configuration
+    #   template:
+    #     src: hass-configuration.yaml.j2
+    #     dest: /home/{{ ansible_user }}/.homeassistant/configuration.yaml
+    #     owner: pi
+    #     group: pi
+    #     mode: 0644
+
+    - name: Copy docker compose file
+      template:
+        src: hass-compose.yml.j2
+        dest: /home/{{ ansible_user }}/docker-compose.yml
+        owner: pi
+        group: pi
+        mode: 0644
+
+    - name: Add pi user to docker group
+      shell: usermod -aG docker pi
+
+    - name: Pull docker image for Home Assistant
+      shell: "docker pull {{ hass_image }}"
+      register: docker_pull
+
+    - name: Show docker pull results
+      debug:
+        var: docker_pull.stdout_lines
+
+    - name: Run docker compose for Home Assistant
+      shell: docker compose -f /home/{{ ansible_user }}/docker-compose.yml up -d
+      register: docker_output
+
+    - name: Show docker compose results
+      debug:
+        var: docker_output
+
+    - name: Test if Home Assistant is up
+      uri:
+        url: "http://{{ ansible_host }}:8123/manifest.json"
+        status_code: 200
+      until: uri_output.status == 200
+      retries: 24 # Retries for 24 * 5 seconds = 120 seconds = 2 minutes
+      delay: 5 # Every 5 seconds
+      register: uri_output
+
+#################################### END #######################################

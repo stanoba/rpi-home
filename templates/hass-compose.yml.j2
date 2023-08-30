@@ -1,0 +1,28 @@
+version: '3'
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: "{{ hass_image }}"
+    environment:
+      TZ: {{ rpi_timezone }}
+    volumes:
+      - /home/pi/.homeassistant:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+    devices:
+      - /dev/ttyUSB-ZWave:/dev/ttyUSB-ZWave
+      - /dev/ttyUSBMySensorsGateway:/dev/ttyUSBMySensorsGateway
+      - /dev/ttyUSB-OTG:/dev/ttyUSB-OTG
+      - /dev/ttyUSB-RF-Link:/dev/ttyUSB-RF-Link
+    restart: unless-stopped
+    privileged: true
+    network_mode: host
+  esphome:
+    container_name: esphome
+    image: ghcr.io/esphome/esphome
+    volumes:
+      - /home/pi/.esphome:/config
+      - /etc/localtime:/etc/localtime:ro
+    restart: always
+    privileged: true
+    network_mode: host

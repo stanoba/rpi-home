@@ -1,0 +1,32 @@
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+rflink:
+  port: /dev/ttyUSB0
+
+light:
+  - platform: rflink
+    automatic_add: true
+sensor:
+  - platform: rflink
+    automatic_add: true
+
+logger:
+  default: error
+  logs:
+    rflink: debug
+    homeassistant.components.rflink: debug
+
+device_tracker:
+  - platform: ping
+    hosts:
+      samsung_s23_5g: 192.168.99.77
+      samsung_s23_2g: 192.168.99.88
